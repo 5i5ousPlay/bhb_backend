@@ -1,0 +1,68 @@
+import json
+import uuid
+from django.shortcuts import render
+from django.utils import timezone
+from django.db.models import OuterRef, Subquery, F
+from django.contrib.gis.geos import Point
+from rest_framework import status, permissions, viewsets, generics, filters
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
+from rest_framework_gis.filters import InBBoxFilter, DistanceToPointFilter
+
+from .models import Sensor, Reading
+from .serializers import (ReadingIngestSerializer, SensorGeoSerializer,
+                          SensorListGeoSerializer, SensorDetailGeoSerializer)
+
+@api_view(['POST'])
+def ingest_reading(request):
+    serializer = ReadingIngestSerializer(data=request.data)
+    serializer.is_valid()
+    data = request.data
+
+    if 'sensor_id' not in data:
+        data['sensor_id'] = uuid.uuid4()
+
+    sensor, _ = Sensor.objects.get_or_create(
+        id=data['sensor_id']
+        )
+    sensor.location=Point(data['lon'], data['lat'])
+    sensor.save(update_fields=['location'])
+
+    Reading.objects.create(
+        sensor=sensor,
+        flood_m=data['flood_m'],
+        reported_on=data['reported_on']
+        )
+    return Response({"ok": True}, status=status.HTTP_201_CREATED)
+
+
+class LiveSensorViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SensorGeoSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return Sensor.objects.filter(is_active=True)
+
+
+class SensorListPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page-size"
+    max_page_size = 20
+
+
+class SensorListView(generics.ListAPIView):
+    queryset = Sensor.objects.order_by("-installed_on")
+    serializer_class = SensorListGeoSerializer
+    pagination_class = SensorListPagination
+    filter_backends = [filters.SearchFilter, InBBoxFilter, DistanceToPointFilter]
+    bbox_filter_field = 'location'
+    distance_filter_field = 'location'
+    distance_filter_convert_meters = True
+    search_fields = ['id', 'name']
+
+
+class SensorDetailView(generics.RetrieveAPIView):
+    queryset = Sensor.objects.all()
+    serializer_class = SensorDetailGeoSerializer
+    lookup_field = 'id'
