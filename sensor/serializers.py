@@ -1,11 +1,11 @@
-import uuid
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
+from utils.serializers import SensorDetailAlertSerializer
 from .models import Sensor, Reading
 
 
 class ReadingIngestSerializer(serializers.Serializer):
-    sensor_id = serializers.UUIDField(required=False)
+    sensor_id = serializers.CharField()
     lat = serializers.FloatField()
     lon = serializers.FloatField()
     flood_m = serializers.FloatField()
@@ -47,8 +47,9 @@ class ReadingDetailSerializer(serializers.ModelSerializer):
 
 class SensorDetailGeoSerializer(GeoFeatureModelSerializer):
     readings = ReadingDetailSerializer(many=True, read_only=True)
+    alerts = SensorDetailAlertSerializer(many=True, read_only=True)
 
     class Meta:
         model = Sensor
         geo_field = 'location'
-        fields = ['id', 'name', 'readings', 'installed_on', 'is_active']
+        fields = ['id', 'name', 'readings', 'alerts', 'installed_on', 'is_active']

@@ -22,4 +22,5 @@ base_url = 'api/v1/'
 urlpatterns = [
     path(f'{base_url}admin/', admin.site.urls),
     path(f'{base_url}sensor/', include('sensor.urls')),
+    path(f'{base_url}alert/', include('alert.urls')),
 ]
