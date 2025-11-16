@@ -62,12 +62,16 @@ def summary_view(request):
     date_from = timezone.now() - timedelta(hours=24)
     alerts_last_24hrs = Alert.objects.filter(reported_on__gte=date_from).count()
 
-    payload = {
+    summary = {
         "total": total_sensors,
         "online": online_sensors,
         "flooded": flooded_sensors,
         "critical": critical_sensors,
         "alerts_24hrs": alerts_last_24hrs,
+        }
+
+    payload = {
+        "summary": summary,
         "flood_severity": flood_severity_dist,
         }
 
