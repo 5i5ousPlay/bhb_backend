@@ -9,6 +9,7 @@ class Sensor(models.Model):
     location = models.PointField(srid=4326, blank=True, null=True)
     installed_on = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+    last_seen = models.DateTimeField(auto_now=True)
 
 
 class Reading(models.Model):
