@@ -29,7 +29,9 @@ def ingest_reading(request):
                 id=data['sensor_id']
                 )
             sensor.location=Point(data['lon'], data['lat'])
-            sensor.save(update_fields=['location'])
+            sensor.is_active = True
+            sensor.last_seen = timezone.now()
+            sensor.save(update_fields=['location', 'is_active', 'last_seen'])
 
             reading = Reading.objects.create(
                 sensor=sensor,

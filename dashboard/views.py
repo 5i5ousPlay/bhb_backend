@@ -47,11 +47,13 @@ def summary_view(request):
         r = s.ordered_readings[0].flood_m  # latest reading
 
         if r > 1.0:
+            critical_sensors += 1
             flood_severity_dist['extreme'] += 1
         elif r >= 0.7:
             critical_sensors += 1
             flood_severity_dist['severe'] += 1
         elif r >= 0.3:
+            flooded_sensors += 1
             flood_severity_dist['moderate'] += 1
         elif r >= 0.1:
             flooded_sensors += 1

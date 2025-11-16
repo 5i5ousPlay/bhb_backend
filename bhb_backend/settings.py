@@ -149,3 +149,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CELERY_BEAT_SCHEDULE = {
+    'check-sensor-health-every-5-minutes': {
+        'task': 'sensor.tasks.update_sensor_status',
+        'schedule': 300,  # every 5 minutes (in seconds)
+    },
+}
+CELERY_TIMEZONE = 'Asia/Manila'
