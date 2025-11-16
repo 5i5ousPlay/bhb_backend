@@ -23,3 +23,4 @@ class Reading(models.Model):
             models.Index(fields=['sensor', 'reported_on'])
             ]
         get_latest_by = "reported_on"
+        ordering = ['-reported_on']

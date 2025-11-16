@@ -3,37 +3,44 @@ import uuid
 from django.shortcuts import render
 from django.utils import timezone
 from django.db.models import OuterRef, Subquery, F
+from django.db import transaction
 from django.contrib.gis.geos import Point
 from rest_framework import status, permissions, viewsets, generics, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework_gis.filters import InBBoxFilter, DistanceToPointFilter
+from utils.functions import evaluate_alerts
 
 from .models import Sensor, Reading
 from .serializers import (ReadingIngestSerializer, SensorGeoSerializer,
                           SensorListGeoSerializer, SensorDetailGeoSerializer)
 
+
 @api_view(['POST'])
 def ingest_reading(request):
     serializer = ReadingIngestSerializer(data=request.data)
-    serializer.is_valid()
-    data = request.data
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
 
-    if 'sensor_id' not in data:
-        data['sensor_id'] = uuid.uuid4()
+    try:
+        with transaction.atomic():
+            sensor, _ = Sensor.objects.get_or_create(
+                id=data['sensor_id']
+                )
+            sensor.location=Point(data['lon'], data['lat'])
+            sensor.save(update_fields=['location'])
 
-    sensor, _ = Sensor.objects.get_or_create(
-        id=data['sensor_id']
-        )
-    sensor.location=Point(data['lon'], data['lat'])
-    sensor.save(update_fields=['location'])
+            reading = Reading.objects.create(
+                sensor=sensor,
+                flood_m=data['flood_m'],
+                reported_on=data['reported_on']
+                )
 
-    Reading.objects.create(
-        sensor=sensor,
-        flood_m=data['flood_m'],
-        reported_on=data['reported_on']
-        )
+            evaluate_alerts(reading=reading)
+    except Exception as e:
+        return Response({"Bad Request": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     return Response({"ok": True}, status=status.HTTP_201_CREATED)
 
 
