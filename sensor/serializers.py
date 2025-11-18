@@ -46,10 +46,8 @@ class ReadingDetailSerializer(serializers.ModelSerializer):
 
 
 class SensorDetailGeoSerializer(GeoFeatureModelSerializer):
-    readings = ReadingDetailSerializer(many=True, read_only=True)
-    alerts = SensorDetailAlertSerializer(many=True, read_only=True)
 
     class Meta:
         model = Sensor
         geo_field = 'location'
-        fields = ['id', 'name', 'readings', 'alerts', 'installed_on', 'is_active']
+        fields = ['id', 'name', 'installed_on', 'is_active']
