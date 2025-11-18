@@ -4,6 +4,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.db.models import OuterRef, Subquery, F
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.contrib.gis.geos import Point
 from rest_framework import status, permissions, viewsets, generics, filters
 from rest_framework.decorators import api_view, permission_classes
@@ -11,9 +12,11 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework_gis.filters import InBBoxFilter, DistanceToPointFilter
 from utils.functions import evaluate_alerts
+from utils.serializers import SensorDetailAlertSerializer
+from alert.models import Alert
 
 from .models import Sensor, Reading
-from .serializers import (ReadingIngestSerializer, SensorGeoSerializer,
+from .serializers import (ReadingIngestSerializer, ReadingDetailSerializer, SensorGeoSerializer,
                           SensorListGeoSerializer, SensorDetailGeoSerializer)
 
 
@@ -75,3 +78,19 @@ class SensorDetailView(generics.RetrieveAPIView):
     queryset = Sensor.objects.all()
     serializer_class = SensorDetailGeoSerializer
     lookup_field = 'id'
+
+
+@api_view(['GET'])
+def sensor_detail_reading_view(request, id):
+    sensor = get_object_or_404(Sensor, id=id)
+    readings = Reading.objects.filter(sensor=sensor)  # or sensor_id=id
+    serializer = ReadingDetailSerializer(readings, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def sensor_detail_alert_view(request, id):
+    sensor = get_object_or_404(Sensor, id=id)
+    alerts = Alert.objects.filter(sensor=sensor)
+    serializer = SensorDetailAlertSerializer(alerts, many=True)
+    return Response(serializer.data)
